@@ -11,7 +11,12 @@ import {HookErrorDisplay} from '../special/HookErrorDisplay.js';
 import {maskSkillInjectedText} from '../../../utils/ui/skillMask.js';
 import {maskGitLineText} from '../../../utils/ui/gitLineMask.js';
 import {maskHookInjectedText} from '../../../utils/ui/hookInjectMask.js';
-import {toCodePoints, visualWidth} from '../../../utils/core/textUtils.js';
+import {
+	toCodePoints,
+	visualWidth,
+	formatDurationMs,
+	MIN_TOOL_DURATION_DISPLAY_MS,
+} from '../../../utils/core/textUtils.js';
 import {getCompressionSummaryDisplay} from '../../../utils/ui/compressionSummaryDisplay.js';
 import type {ThinkDisplayMode} from '../../../utils/config/themeConfig.js';
 import {getToolStatusIcon} from '../special/toolIcons.js';
@@ -951,7 +956,23 @@ function MessageRendererImpl({
 					{!message.plainOutput && effectiveIsLastInGroup && (
 						<Box marginTop={0}>
 							<Text color={theme.colors.menuInfo} dimColor>
-								{t.chatScreen.parallelEnd}
+								{(() => {
+									// Group-level wall-clock duration (last completedAt -
+									// earliest startedAt). Attached by buildToolResultMessages
+									// so the parallelEnd indicator can show batch cost
+									// separate from each tool's own durationMs.
+									const groupMs = message.parallelGroupElapsedMs;
+									if (
+										typeof groupMs === 'number' &&
+										groupMs >= MIN_TOOL_DURATION_DISPLAY_MS
+									) {
+										return t.chatScreen.parallelEndWithDuration.replace(
+											'{duration}',
+											formatDurationMs(groupMs),
+										);
+									}
+									return t.chatScreen.parallelEnd;
+								})()}
 							</Text>
 						</Box>
 					)}

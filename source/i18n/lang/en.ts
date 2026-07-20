@@ -1665,6 +1665,9 @@ export const en: TranslationKeys = {
 		// Parallel execution
 		parallelStart: '┌─ Parallel execution',
 		parallelEnd: '└─ Execution completed',
+		parallelEndWithDuration: '└─ Execution completed ({duration})',
+		pendingToolsMore: '+{count} more tool(s) running…',
+		pendingToolsSummary: '{count} tool(s) running… ({elapsed})',
 		// Messages
 		userMessage: 'You',
 		assistantMessage: 'Assistant',
@@ -2163,6 +2166,9 @@ export const en: TranslationKeys = {
 		commandPagerStatus: '{page}/{total}',
 		commandPagerHint: 'Tab: Next page (wraps)',
 		multiToolPagerHint: 'Tab: View next tool group ({page}/{total})',
+		diffPreviewTitle: 'Diff preview:',
+		diffPreviewTruncated:
+			'{count} more file(s) changed - approve to see full diff',
 		selectAction: 'Select action:',
 		enterRejectionReason: 'Enter rejection reason:',
 		pressEnterToSubmit: 'Press Enter to submit',

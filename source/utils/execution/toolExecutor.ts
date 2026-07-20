@@ -105,6 +105,11 @@ export interface ToolResult {
 		output?: string;
 		error?: string;
 	}; // Hook error details for UI rendering
+	// Per-tool completion timestamp (ms since epoch). Stamped by executeToolCalls
+	// immediately after executeToolCall resolves, so parallel siblings don't
+	// inherit the slowest tool's end time. Consumed by buildToolResultMessages
+	// to compute accurate per-tool durationMs.
+	completedAt?: number;
 }
 
 export type SubAgentMessageCallback = (message: SubAgentMessage) => void;
@@ -946,7 +951,12 @@ export async function executeToolCalls(
 					sessionId,
 					workingDirectory,
 				);
-				groupResults.push(result);
+				// Stamp per-tool completion time immediately so parallel
+				// siblings don't inherit the slowest tool's end time.
+				// buildToolResultMessages uses this instead of a single
+				// batch-level Date.now() (which only fires after Promise.all
+				// resolves, i.e. at the last tool's completion).
+				groupResults.push({...result, completedAt: Date.now()});
 
 				// If hook failed or aborted, stop executing remaining tools
 				if (result.hookFailed || abortSignal?.aborted) {

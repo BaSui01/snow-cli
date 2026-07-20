@@ -1575,6 +1575,9 @@ export const zh: TranslationKeys = {
 		// Parallel execution
 		parallelStart: '┌─ 并行执行',
 		parallelEnd: '└─ 执行完成',
+		parallelEndWithDuration: '└─ 执行完成 ({duration})',
+		pendingToolsMore: '还有 {count} 个工具运行中…',
+		pendingToolsSummary: '{count} 个工具运行中… ({elapsed})',
 		// Messages
 		userMessage: '你',
 		assistantMessage: '助手',
@@ -2043,6 +2046,8 @@ export const zh: TranslationKeys = {
 		commandPagerStatus: '{page}/{total}',
 		commandPagerHint: 'Tab 下一页(循环)',
 		multiToolPagerHint: 'Tab 查看下一组工具 ({page}/{total})',
+		diffPreviewTitle: '差异预览:',
+		diffPreviewTruncated: '还有 {count} 个文件变更 - 批准后可查看完整差异',
 		selectAction: '选择操作:',
 		enterRejectionReason: '输入拒绝原因:',
 		pressEnterToSubmit: '按 Enter 提交',

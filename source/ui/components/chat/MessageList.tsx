@@ -79,6 +79,11 @@ export interface Message {
 		maxTokens: number;
 	};
 	parallelGroup?: string; // Group ID for parallel tool execution (same ID = executed together)
+	// Total elapsed time (ms) for the parallel group this message belongs to.
+	// Computed in buildToolResultMessages as (last completedAt - earliest startedAt)
+	// and rendered on the parallelEnd indicator so users can see the batch-level
+	// wall-clock cost separate from each tool's own durationMs.
+	parallelGroupElapsedMs?: number;
 	hookError?: {
 		type: 'warning' | 'error';
 		exitCode: number;

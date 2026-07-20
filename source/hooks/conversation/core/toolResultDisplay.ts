@@ -24,7 +24,47 @@ export function buildToolResultMessages(
 	toolStartTimes?: Map<string, number>,
 ): Message[] {
 	const resultMessages: Message[] = [];
-	const completedAt = Date.now();
+	// Fallback completion timestamp for results that don't carry their own
+	// completedAt (e.g. aborted results constructed in executeToolCalls before
+	// the per-tool stamping). Per-tool completedAt is preferred so parallel
+	// siblings don't all inherit the slowest tool's end time.
+	const fallbackCompletedAt = Date.now();
+
+	// Group-level wall-clock elapsed = (last completedAt) - (earliest startedAt).
+	// Only meaningful when more than one tool ran in parallel; for single-tool
+	// rounds the per-tool durationMs already covers it. Rendered on the
+	// parallelEnd indicator so users can tell batch cost apart from per-tool cost.
+	let groupElapsedMs: number | undefined;
+	if (
+		parallelGroupId &&
+		receivedToolCalls.length > 1 &&
+		toolStartTimes &&
+		toolStartTimes.size > 0
+	) {
+		let earliestStart: number | undefined;
+		let latestEnd: number | undefined;
+		for (const result of toolResults) {
+			const startedAt = toolStartTimes.get(result.tool_call_id);
+			if (typeof startedAt === 'number') {
+				earliestStart =
+					earliestStart === undefined
+						? startedAt
+						: Math.min(earliestStart, startedAt);
+			}
+			const end =
+				typeof result.completedAt === 'number'
+					? result.completedAt
+					: fallbackCompletedAt;
+			latestEnd = latestEnd === undefined ? end : Math.max(latestEnd, end);
+		}
+		if (
+			earliestStart !== undefined &&
+			latestEnd !== undefined &&
+			latestEnd >= earliestStart
+		) {
+			groupElapsedMs = latestEnd - earliestStart;
+		}
+	}
 
 	for (const result of toolResults) {
 		const toolCall = receivedToolCalls.find(
@@ -36,6 +76,12 @@ export function buildToolResultMessages(
 		const statusKey = isError ? 'error' : 'success';
 
 		const startedAt = toolStartTimes?.get(toolCall.id);
+		// Prefer per-tool completion time; fall back to batch-level for
+		// results without a stamped timestamp.
+		const completedAt =
+			typeof result.completedAt === 'number'
+				? result.completedAt
+				: fallbackCompletedAt;
 		const durationMs =
 			typeof startedAt === 'number' ? completedAt - startedAt : undefined;
 		const durationLabel =
@@ -68,7 +114,11 @@ export function buildToolResultMessages(
 				toolCallId: result.tool_call_id,
 				toolResult: !isError ? result.content : undefined,
 				subAgentUsage: usage,
+				parallelGroup: parallelGroupId,
 				...(typeof durationMs === 'number' ? {toolDurationMs: durationMs} : {}),
+				...(typeof groupElapsedMs === 'number'
+					? {parallelGroupElapsedMs: groupElapsedMs}
+					: {}),
 			});
 			continue;
 		}
@@ -94,6 +144,9 @@ export function buildToolResultMessages(
 			toolResult: !isError ? result.content : undefined,
 			parallelGroup: parallelGroupId,
 			...(typeof durationMs === 'number' ? {toolDurationMs: durationMs} : {}),
+			...(typeof groupElapsedMs === 'number'
+				? {parallelGroupElapsedMs: groupElapsedMs}
+				: {}),
 		});
 	}
 

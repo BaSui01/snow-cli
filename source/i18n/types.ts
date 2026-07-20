@@ -1478,6 +1478,9 @@ export type TranslationKeys = {
 		// Parallel execution
 		parallelStart: string;
 		parallelEnd: string;
+		parallelEndWithDuration: string;
+		pendingToolsMore: string;
+		pendingToolsSummary: string;
 		// Messages
 		userMessage: string;
 		assistantMessage: string;
@@ -1887,6 +1890,8 @@ export type TranslationKeys = {
 		commandPagerStatus: string;
 		commandPagerHint: string;
 		multiToolPagerHint: string;
+		diffPreviewTitle: string;
+		diffPreviewTruncated: string;
 		selectAction: string;
 		enterRejectionReason: string;
 		pressEnterToSubmit: string;
