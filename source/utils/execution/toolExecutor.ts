@@ -105,6 +105,10 @@ export interface ToolResult {
 		output?: string;
 		error?: string;
 	}; // Hook error details for UI rendering
+	// Per-tool start timestamp (ms since epoch). Stamped by executeToolCalls
+	// immediately before executeToolCall so sequential siblings in the same
+	// resource group report their own runtime, not "batch start → my end".
+	startedAt?: number;
 	// Per-tool completion timestamp (ms since epoch). Stamped by executeToolCalls
 	// immediately after executeToolCall resolves, so parallel siblings don't
 	// inherit the slowest tool's end time. Consumed by buildToolResultMessages
@@ -806,8 +810,9 @@ function getToolResourceType(toolName: string): string {
 		return 'user-interaction';
 	}
 
-	// Terminal commands must be sequential to avoid race conditions
-	// (e.g., npm install -> npm build, port conflicts, file locks)
+	// Terminal commands are independent by default so parallel tool calls
+	// (e.g. sleep 3 / sleep 8 / sleep 1) actually run concurrently.
+	// Dependent sequences should use shell chaining (&& / ;) or separate turns.
 	if (toolName === 'terminal-execute') {
 		return 'terminal-execution';
 	}
@@ -869,7 +874,10 @@ function getResourceIdentifier(toolCall: ToolCall): string {
 	}
 
 	if (resourceType === 'terminal-execution') {
-		return 'terminal-execution'; // All terminal commands share same execution context
+		// One lane per tool call so concurrent terminal-execute requests
+		// run in parallel. Wall-clock group elapsed then reflects the
+		// slowest command (~8s for sleep 3/8/1) instead of the serial sum.
+		return `terminal-execution:${toolCall.id}`;
 	}
 
 	if (resourceType === 'filesystem') {
@@ -938,6 +946,10 @@ export async function executeToolCalls(
 					break;
 				}
 
+				// Stamp the real start time right before execution so sequential
+				// tools in the same resource group (todo/notebook/askuser)
+				// report self-duration, not "batch start → my end".
+				const toolStartedAt = Date.now();
 				const result = await executeToolCall(
 					toolCall,
 					abortSignal,
@@ -956,7 +968,11 @@ export async function executeToolCalls(
 				// buildToolResultMessages uses this instead of a single
 				// batch-level Date.now() (which only fires after Promise.all
 				// resolves, i.e. at the last tool's completion).
-				groupResults.push({...result, completedAt: Date.now()});
+				groupResults.push({
+					...result,
+					startedAt: toolStartedAt,
+					completedAt: Date.now(),
+				});
 
 				// If hook failed or aborted, stop executing remaining tools
 				if (result.hookFailed || abortSignal?.aborted) {

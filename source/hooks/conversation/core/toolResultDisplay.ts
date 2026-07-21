@@ -30,21 +30,27 @@ export function buildToolResultMessages(
 	// siblings don't all inherit the slowest tool's end time.
 	const fallbackCompletedAt = Date.now();
 
+	// Resolve the best available start time for a result:
+	// 1) result.startedAt stamped immediately before executeToolCall
+	// 2) toolStartTimes from pending UI (batch-level for parallel rounds)
+	const resolveStartedAt = (result: ToolResult, toolCallId: string) => {
+		if (typeof result.startedAt === 'number') {
+			return result.startedAt;
+		}
+		const fromPending = toolStartTimes?.get(toolCallId);
+		return typeof fromPending === 'number' ? fromPending : undefined;
+	};
+
 	// Group-level wall-clock elapsed = (last completedAt) - (earliest startedAt).
 	// Only meaningful when more than one tool ran in parallel; for single-tool
 	// rounds the per-tool durationMs already covers it. Rendered on the
 	// parallelEnd indicator so users can tell batch cost apart from per-tool cost.
 	let groupElapsedMs: number | undefined;
-	if (
-		parallelGroupId &&
-		receivedToolCalls.length > 1 &&
-		toolStartTimes &&
-		toolStartTimes.size > 0
-	) {
+	if (parallelGroupId && receivedToolCalls.length > 1) {
 		let earliestStart: number | undefined;
 		let latestEnd: number | undefined;
 		for (const result of toolResults) {
-			const startedAt = toolStartTimes.get(result.tool_call_id);
+			const startedAt = resolveStartedAt(result, result.tool_call_id);
 			if (typeof startedAt === 'number') {
 				earliestStart =
 					earliestStart === undefined
@@ -75,9 +81,9 @@ export function buildToolResultMessages(
 		const isError = result.content.startsWith('Error:');
 		const statusKey = isError ? 'error' : 'success';
 
-		const startedAt = toolStartTimes?.get(toolCall.id);
-		// Prefer per-tool completion time; fall back to batch-level for
-		// results without a stamped timestamp.
+		// Prefer per-tool start/completion stamps from executeToolCalls so
+		// sequential siblings don't inherit "batch start → my end".
+		const startedAt = resolveStartedAt(result, toolCall.id);
 		const completedAt =
 			typeof result.completedAt === 'number'
 				? result.completedAt
