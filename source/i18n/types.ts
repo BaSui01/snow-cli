@@ -152,6 +152,8 @@ export type TranslationKeys = {
 	// Menu
 	menu: {
 		navigate: string;
+		moreAbove: string;
+		moreBelow: string;
 	};
 	// Proxy Config Screen
 	proxyConfig: {
@@ -570,6 +572,12 @@ export type TranslationKeys = {
 		simpleModeInfo: string;
 		diffOpacity: string;
 		diffOpacityInfo: string;
+		toolDisplay: string;
+		toolDisplayInfo: string;
+		thinkDisplay: string;
+		thinkDisplayInfo: string;
+		subAgentDisplay: string;
+		subAgentDisplayInfo: string;
 		enabled: string;
 		disabled: string;
 		darkTheme: string;
@@ -843,6 +851,8 @@ export type TranslationKeys = {
 			toolIcons: string;
 			toolNames: string;
 			thinkDisplay: string;
+			subAgentDisplay: string;
+			display: string;
 			speedometer: string;
 			cut: string;
 			quit: string;
@@ -915,6 +925,19 @@ export type TranslationKeys = {
 				status: (mode: string) => string;
 				set: (mode: string) => string;
 				invalid: string;
+			};
+			// Sub-agent live panel display mode
+			subAgentDisplay: {
+				status: (mode: string) => string;
+				set: (mode: string) => string;
+				invalid: string;
+			};
+			// Unified /display command messages
+			display: {
+				status: (tool: string, think: string, subagent: string) => string;
+				help: string;
+				invalid: string;
+				opening: string;
 			};
 			// Speedometer command messages
 			speedometer: {
@@ -1251,6 +1274,20 @@ export type TranslationKeys = {
 		no: string;
 	};
 
+	// Unified /display settings panel (tool / think / sub-agent)
+	displayPanel: {
+		title: string;
+		tool: string;
+		think: string;
+		subagent: string;
+		toolInfo: string;
+		thinkInfo: string;
+		subagentInfo: string;
+		close: string;
+		closeInfo: string;
+		hint: string;
+	};
+
 	subAgentDepthPanel: {
 		title: string;
 		description: string;
@@ -1446,6 +1483,8 @@ export type TranslationKeys = {
 		statusFinishing: string;
 		statusStreaming: string;
 		statusWorking: string;
+		/** Main agent is idle while sub-agent live slots are running */
+		statusWaitingSubAgents: string;
 		statusIndexing: string;
 		statusWatcherActive: string;
 		statusWatcherActiveShort: string;

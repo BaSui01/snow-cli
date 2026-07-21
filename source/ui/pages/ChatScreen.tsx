@@ -86,6 +86,8 @@ export default function ChatScreen({
 		setShowPermissionsPanel,
 		showSubAgentDepthPanel,
 		setShowSubAgentDepthPanel,
+		showDisplayPanel,
+		setShowDisplayPanel,
 		restoreInputContent,
 		setRestoreInputContent,
 		inputDraftContent,
@@ -130,6 +132,7 @@ export default function ChatScreen({
 		showThinking,
 		toolDisplayMode,
 		thinkDisplayMode,
+		subAgentDisplayMode,
 	} = useChatScreenModes({enableYolo, enablePlan});
 	const streamingState = useStreamingState();
 	const vscodeState = useVSCodeState();
@@ -394,6 +397,7 @@ export default function ChatScreen({
 		setShowContextPanel: panelState.setShowContextPanel,
 		setShowModelsPanel: panelState.setShowModelsPanel,
 		setShowSubAgentDepthPanel,
+		setShowDisplayPanel,
 		setShowCustomCommandConfig: panelState.setShowCustomCommandConfig,
 		setShowSkillsCreation: panelState.setShowSkillsCreation,
 		setShowSkillsInstall: panelState.setShowSkillsInstall,
@@ -538,7 +542,8 @@ export default function ChatScreen({
 		panelState.showGamesPanel ||
 		panelState.showAnyPanel ||
 		showPermissionsPanel ||
-		showSubAgentDepthPanel;
+		showSubAgentDepthPanel ||
+		showDisplayPanel;
 	const shouldShowFooter =
 		!pendingToolConfirmation &&
 		!pendingUserQuestion &&
@@ -643,6 +648,7 @@ export default function ChatScreen({
 				showThinking={showThinking}
 				toolDisplayMode={toolDisplayMode}
 				thinkDisplayMode={thinkDisplayMode}
+				subAgentDisplayMode={subAgentDisplayMode}
 				pendingMessages={pendingMessages}
 				pendingToolConfirmation={pendingToolConfirmation}
 				pendingUserQuestion={pendingUserQuestion}
@@ -670,6 +676,8 @@ export default function ChatScreen({
 				setShowPermissionsPanel={setShowPermissionsPanel}
 				showSubAgentDepthPanel={showSubAgentDepthPanel}
 				setShowSubAgentDepthPanel={setShowSubAgentDepthPanel}
+				showDisplayPanel={showDisplayPanel}
+				setShowDisplayPanel={setShowDisplayPanel}
 				modelsPanelAdvancedModel={getSnowConfig().advancedModel || ''}
 				modelsPanelBasicModel={getSnowConfig().basicModel || ''}
 				alwaysApprovedTools={alwaysApprovedTools}

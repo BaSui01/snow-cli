@@ -154,6 +154,8 @@ export const zh: TranslationKeys = {
 	},
 	menu: {
 		navigate: '使用 ↑↓ 键导航,按 Enter 选择:',
+		moreAbove: '↑ 上方还有 {count} 项',
+		moreBelow: '↓ 下方还有 {count} 项',
 	},
 	proxyConfig: {
 		title: '代理配置',
@@ -582,6 +584,14 @@ export const zh: TranslationKeys = {
 		diffOpacity: 'Diff 高亮强度:',
 		diffOpacityInfo:
 			'调整差异高亮显示强度，默认 100%，最低 30%，回车按 10% 循环切换',
+		toolDisplay: '工具显示:',
+		toolDisplayInfo:
+			'工具调用密度 full/compact/hidden（回车循环；等同 /tool-display）',
+		thinkDisplay: '思考显示:',
+		thinkDisplayInfo: '思考内容 full/compact（回车循环；等同 /think-display）',
+		subAgentDisplay: '子代理显示:',
+		subAgentDisplayInfo:
+			'子代理实时面板 slots/multi/compact/hidden（回车循环；等同 /subagent-display）',
 		enabled: '[✓] 已启用',
 		disabled: '[ ] 已禁用',
 		darkTheme: '深色主题',
@@ -875,6 +885,10 @@ export const zh: TranslationKeys = {
 				'自定义工具显示名（官方路径，勿整文件改 theme.json）。用法: /tool-names|/tool-name [status|clear|<tool>:<名> …]',
 			thinkDisplay:
 				'控制思考内容显示模式。用法: /think-display [full|compact|status]',
+			subAgentDisplay:
+				'控制子代理实时显示。slots=单行焦点(默认) multi=多行 compact=仅标题 hidden=旧卡片 status=查询。用法: /subagent-display [slots|multi|compact|hidden|status]',
+			display:
+				'打开显示设置面板（工具/思考/子代理）。用法: /display | status | tool|think|subagent [mode]',
 			speedometer:
 				'切换实时测速仪，监控 token/s 输出速率。用法: /speedometer [on|off|status]',
 			cut: '打断 AI 回复并立即发送消息。用法: /cut <消息内容>',
@@ -994,6 +1008,38 @@ export const zh: TranslationKeys = {
 						: '（缩减思考内容后移入静态区）'),
 				set: (mode: string) => `思考显示模式已设置为: ${mode}`,
 				invalid: '无效的模式。用法: /think-display [full|compact|status]',
+			},
+			subAgentDisplay: {
+				status: (mode: string) =>
+					'子代理显示模式: ' +
+					mode +
+					(mode === 'slots'
+						? ' (agent 容器 + 单行焦点覆盖)'
+						: mode === 'multi'
+						? ' (agent 容器 + 多行历史)'
+						: mode === 'compact'
+						? ' (仅 agent 标题行)'
+						: ' (关闭实时面板，回退旧工具卡片)'),
+				set: (mode: string) => '子代理显示模式已设为: ' + mode,
+				invalid:
+					'无效的模式。用法: /subagent-display [slots|multi|compact|hidden|status]',
+			},
+			display: {
+				status: (tool: string, think: string, subagent: string) =>
+					'显示设置: tool=' +
+					tool +
+					' · think=' +
+					think +
+					' · subagent=' +
+					subagent,
+				help:
+					'用法: /display [status]\n' +
+					'      /display tool [full|compact|hidden|status]\n' +
+					'      /display think [full|compact|status]\n' +
+					'      /display subagent [slots|multi|compact|hidden|status]\n' +
+					'兼容: /tool-display · /think-display · /subagent-display',
+				invalid: '无效参数。用法: /display [status|tool|think|subagent] [mode]',
+				opening: '正在打开显示设置面板',
 			},
 			// 测速仪命令消息
 			speedometer: {
@@ -1269,6 +1315,19 @@ export const zh: TranslationKeys = {
 		yes: '是',
 		no: '否',
 	},
+	displayPanel: {
+		title: '显示设置',
+		tool: '工具显示:',
+		think: '思考显示:',
+		subagent: '子代理显示:',
+		toolInfo: '回车循环 full → compact → hidden（等同 /display tool）',
+		thinkInfo: '回车循环 compact → full（等同 /display think）',
+		subagentInfo:
+			'回车循环 slots → multi → compact → hidden（等同 /display subagent）',
+		close: '← 关闭',
+		closeInfo: '返回聊天',
+		hint: '↑↓ 导航 · Enter 切换 · Esc 关闭 · 也可: /display tool|think|subagent',
+	},
 	subAgentDepthPanel: {
 		title: '子代理深度设置',
 		description: '设置子代理继续创建子代理的最大允许深度。',
@@ -1542,6 +1601,7 @@ export const zh: TranslationKeys = {
 		statusFinishing: '收尾中...',
 		statusStreaming: '流式传输中',
 		statusWorking: '工作中',
+		statusWaitingSubAgents: '等待子代理中...',
 		statusIndexing: '索引代码库...',
 		statusWatcherActive: '文件监视器已激活 - 监控代码变化',
 		statusWatcherActiveShort: '文件监视',

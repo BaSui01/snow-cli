@@ -11,6 +11,11 @@ import {
 	subscribeSubAgentStream,
 	getSubAgentStreamSnapshot,
 } from '../../../hooks/conversation/core/subAgentMessageHandler.js';
+import {
+	subscribeSubAgentLive,
+	getSubAgentLiveSnapshot,
+	SUBAGENT_LIVE_SLOTS_ENABLED,
+} from '../../../hooks/conversation/core/subAgentLiveStore.js';
 
 /**
  * 截断错误消息，避免过长显示
@@ -146,6 +151,10 @@ export default function LoadingIndicator({
 		subscribeSubAgentStream,
 		getSubAgentStreamSnapshot,
 	);
+	const subAgentLiveSlots = useSyncExternalStore(
+		subscribeSubAgentLive,
+		getSubAgentLiveSnapshot,
+	);
 
 	const streamActivityMarker = [
 		streamTokenCount,
@@ -207,11 +216,42 @@ export default function LoadingIndicator({
 	}
 
 	const showTeamTree = teamMode && teammateStream.length > 0 && isStreaming;
-	const showSubAgentTree = subAgentStream.length > 0 && isStreaming;
+	// When live slots are rendering detailed per-agent status, skip the
+	// LoadingIndicator sub-agent tree to avoid double-listing agent names.
+	// Team teammate tree is unaffected.
+	// Only active (non-terminal) live slots hide the main status bar.
+	// Residual Done cards must not suppress main-agent writing status.
+	const hasActiveLiveSubAgentSlots =
+		SUBAGENT_LIVE_SLOTS_ENABLED &&
+		subAgentLiveSlots.some(
+			s => s.status !== 'completed' && s.status !== 'error',
+		);
+	const hasLiveSubAgentSlots =
+		SUBAGENT_LIVE_SLOTS_ENABLED && subAgentLiveSlots.length > 0;
+	const showSubAgentTree =
+		subAgentStream.length > 0 && isStreaming && !hasLiveSubAgentSlots;
 	const isRetryResending =
 		retryStatus?.isRetrying === true &&
 		(retryStatus.remainingSeconds === undefined ||
 			retryStatus.remainingSeconds === 0);
+
+	// Live slots already show per-agent work. Hide the main-agent status bar
+	// so users do not see a misleading "Thinking..." while waiting.
+	// Keep rendering for retry / codebase / team / stop / save — those are
+	// independent surfaces and must not be suppressed.
+	const isRetrying = retryStatus?.isRetrying === true;
+	const isCodebaseSearching = codebaseSearchStatus?.isSearching === true;
+	if (
+		hasActiveLiveSubAgentSlots &&
+		isStreaming &&
+		!isStopping &&
+		!isSaving &&
+		!isRetrying &&
+		!isCodebaseSearching &&
+		!showTeamTree
+	) {
+		return null;
+	}
 	const loadingTips = t.chatScreen.loadingTips;
 	const loadingTip =
 		loadingTips.length > 0
@@ -406,7 +446,10 @@ export default function LoadingIndicator({
 							<Text color={loadingTextColor} dimColor bold>
 								<ShimmerText
 									text={
-										isReasoning
+										// Live slots already show per-agent work; main agent is only waiting.
+										hasLiveSubAgentSlots
+											? t.chatScreen.statusWaitingSubAgents
+											: isReasoning
 											? t.chatScreen.statusDeepThinking
 											: streamTokenCount > 0
 											? t.chatScreen.statusWriting
@@ -423,10 +466,20 @@ export default function LoadingIndicator({
 									</>
 								)}
 								{formatElapsedTime(elapsedSeconds)}
-								{' · '}
-								<Text color={loadingTokenColor}>
-									↓ {formatTokens(streamTokenCount)} tokens
-								</Text>
+								{hasLiveSubAgentSlots ? (
+									<>
+										{' · '}
+										{subAgentLiveSlots.length} agent
+										{subAgentLiveSlots.length === 1 ? '' : 's'}
+									</>
+								) : (
+									<>
+										{' · '}
+										<Text color={loadingTokenColor}>
+											↓ {formatTokens(streamTokenCount)} tokens
+										</Text>
+									</>
+								)}
 								{')'}
 							</Text>
 						)}

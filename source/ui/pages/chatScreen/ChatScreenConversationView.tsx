@@ -3,6 +3,7 @@ import {Box, Static} from 'ink';
 import type {Message} from '../../components/chat/MessageList.js';
 import PendingMessages from '../../components/chat/PendingMessages.js';
 import PendingToolCalls from '../../components/chat/PendingToolCalls.js';
+import SubAgentLiveSlots from '../../components/chat/SubAgentLiveSlots.js';
 import ToolConfirmation from '../../components/tools/ToolConfirmation.js';
 import AskUserQuestion from '../../components/special/AskUserQuestion.js';
 import {
@@ -23,6 +24,7 @@ import type {CompressionStatus as CompressionStatusType} from '../../components/
 import {ThinkingStatus} from '../../components/chat/ThinkingStatus.js';
 import type {ThinkingStatus as ThinkingStatusType} from '../../components/chat/ThinkingStatus.js';
 import type {ThinkDisplayMode} from '../../../utils/config/themeConfig.js';
+import type {SubAgentDisplayMode} from '../../../utils/config/themeConfig.js';
 import type {HookErrorDetails} from '../../../utils/execution/hookResultInterpreter.js';
 import type {
 	BashSensitiveCommandState,
@@ -40,6 +42,7 @@ type Props = {
 	showThinking: boolean;
 	toolDisplayMode: 'full' | 'compact' | 'hidden';
 	thinkDisplayMode: ThinkDisplayMode;
+	subAgentDisplayMode: SubAgentDisplayMode;
 	pendingMessages: PendingMessageInput[];
 	pendingToolConfirmation: any;
 	pendingUserQuestion: PendingUserQuestionState;
@@ -65,6 +68,7 @@ export default function ChatScreenConversationView({
 	showThinking,
 	toolDisplayMode,
 	thinkDisplayMode,
+	subAgentDisplayMode,
 	pendingMessages,
 	pendingToolConfirmation,
 	pendingUserQuestion,
@@ -122,6 +126,10 @@ export default function ChatScreenConversationView({
 			</Static>
 
 			<Box paddingX={1} width={terminalWidth} flexDirection="column">
+				<SubAgentLiveSlots
+					toolDisplayMode={toolDisplayMode}
+					subAgentDisplayMode={subAgentDisplayMode}
+				/>
 				<PendingToolCalls messages={messages} />
 				<PendingMessages pendingMessages={pendingMessages} />
 			</Box>

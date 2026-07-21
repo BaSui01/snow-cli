@@ -34,6 +34,7 @@ export interface CommandResult {
 		| 'showProfilePanel'
 		| 'showModelsPanel'
 		| 'showSubAgentDepthPanel'
+		| 'showDisplayPanel'
 		| 'showSkillsPicker'
 		| 'showGitLinePicker'
 		| 'help'

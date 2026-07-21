@@ -1,0 +1,250 @@
+import React, {useEffect, useState, memo, useSyncExternalStore} from 'react';
+import {Box, Text} from 'ink';
+import {
+	subscribeSubAgentLive,
+	getSubAgentLiveSnapshot,
+	SUBAGENT_LIVE_SLOTS_ENABLED,
+	type SubAgentLiveSlot,
+	type SubAgentLiveStatus,
+} from '../../../hooks/conversation/core/subAgentLiveStore.js';
+import type {SubAgentDisplayMode} from '../../../utils/config/themeConfig.js';
+import {
+	formatDurationMs,
+	formatElapsedTime,
+	MIN_TOOL_DURATION_DISPLAY_MS,
+} from '../../../utils/core/textUtils.js';
+import {useTheme} from '../../contexts/ThemeContext.js';
+import {useI18n} from '../../../i18n/I18nContext.js';
+
+type ToolDisplayMode = 'full' | 'compact' | 'hidden';
+
+interface Props {
+	toolDisplayMode?: ToolDisplayMode;
+	/** /subagent-display mode: slots|multi|compact|hidden */
+	subAgentDisplayMode?: SubAgentDisplayMode;
+}
+
+/** Strip ANSI SGR sequences from tool title lines. */
+function stripAnsi(text: string): string {
+	return text.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
+function formatTokens(count: number): string {
+	if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+	return String(count);
+}
+
+function statusLabel(
+	slot: SubAgentLiveSlot,
+	t: {
+		chatScreen: {
+			statusThinking: string;
+			statusWriting: string;
+			statusDeepThinking: string;
+		};
+	},
+): string {
+	switch (slot.status) {
+		case 'thinking':
+			return slot.isReasoning
+				? t.chatScreen.statusDeepThinking
+				: t.chatScreen.statusThinking;
+		case 'writing':
+			return t.chatScreen.statusWriting;
+		case 'waiting_user':
+			return 'Waiting';
+		case 'error':
+			return 'Error';
+		case 'completed':
+			return 'Done';
+		case 'tool_focus':
+		case 'multi_pending':
+			return 'Running';
+		default:
+			return t.chatScreen.statusThinking;
+	}
+}
+
+function statusColorFor(
+	status: SubAgentLiveStatus,
+	isReasoning: boolean,
+	colors: {
+		warning: string;
+		cyan: string;
+		error: string;
+		success: string;
+		menuSecondary: string;
+	},
+): string {
+	switch (status) {
+		case 'thinking':
+			return colors.warning;
+		case 'writing':
+			return colors.cyan;
+		case 'tool_focus':
+		case 'multi_pending':
+			return colors.warning;
+		case 'waiting_user':
+			return colors.menuSecondary;
+		case 'error':
+			return colors.error;
+		case 'completed':
+			return colors.success;
+		default:
+			return isReasoning ? colors.warning : colors.menuSecondary;
+	}
+}
+
+function formatSlotElapsed(
+	startedAt: number,
+	now: number,
+	frozenDurationMs?: number,
+): string {
+	const elapsedMs =
+		typeof frozenDurationMs === 'number'
+			? Math.max(0, frozenDurationMs)
+			: Math.max(0, now - startedAt);
+	if (elapsedMs < MIN_TOOL_DURATION_DISPLAY_MS) {
+		return '';
+	}
+	const elapsedSec = Math.floor(elapsedMs / 1000);
+	return (
+		formatElapsedTime(Math.max(elapsedSec, 1)) || formatDurationMs(elapsedMs)
+	);
+}
+
+function SubAgentLiveSlotsImpl({
+	toolDisplayMode = 'full',
+	subAgentDisplayMode = 'slots',
+}: Props) {
+	const {theme} = useTheme();
+	const {t} = useI18n();
+
+	const slots = useSyncExternalStore(
+		subscribeSubAgentLive,
+		getSubAgentLiveSnapshot,
+	);
+
+	const hasActiveSlots = slots.some(
+		s => s.status !== 'completed' && s.status !== 'error',
+	);
+
+	// Single shared 1s clock for elapsed labels while any active slot runs.
+	const [now, setNow] = useState(() => Date.now());
+	useEffect(() => {
+		if (!hasActiveSlots) {
+			return;
+		}
+		const timer = setInterval(() => {
+			setNow(Date.now());
+		}, 1000);
+		return () => clearInterval(timer);
+	}, [hasActiveSlots]);
+
+	if (
+		!SUBAGENT_LIVE_SLOTS_ENABLED ||
+		subAgentDisplayMode === 'hidden' ||
+		slots.length === 0
+	) {
+		return null;
+	}
+
+	const hideFocus =
+		toolDisplayMode === 'hidden' || subAgentDisplayMode === 'compact';
+	const showMultiHistory = subAgentDisplayMode === 'multi' && !hideFocus;
+
+	return (
+		<Box flexDirection="column">
+			{slots.map(slot => {
+				const label = statusLabel(slot, t);
+				const elapsed = formatSlotElapsed(slot.startedAt, now, slot.durationMs);
+				// Desired header: (elapsed · status · tokens)
+				const headerParts = [
+					elapsed || undefined,
+					label,
+					slot.tokenCount > 0
+						? `${formatTokens(slot.tokenCount)} tokens`
+						: undefined,
+				].filter(Boolean);
+				const headerMeta =
+					headerParts.length > 0 ? headerParts.join(' · ') : '';
+				const color = statusColorFor(
+					slot.status,
+					slot.isReasoning,
+					theme.colors,
+				);
+				const isTerminal =
+					slot.status === 'completed' || slot.status === 'error';
+
+				// Tool focus wins; content preview only while writing with no tool focus.
+				// Terminal slots hide body — header alone is the residual Done card.
+				const focusTitle = isTerminal
+					? ''
+					: !hideFocus && slot.focus?.title
+					? stripAnsi(slot.focus.title)
+					: !hideFocus && slot.status === 'writing' && slot.preview
+					? stripAnsi(slot.preview)
+					: '';
+
+				return (
+					<Box key={slot.agentId} flexDirection="column">
+						<Box>
+							<Text
+								color={
+									isTerminal ? theme.colors.success : theme.colors.menuSelected
+								}
+								bold
+							>
+								{'  ◈ '}
+								{slot.agentName}
+							</Text>
+							{headerMeta ? (
+								<Text color={color} dimColor>
+									{'  '}({headerMeta})
+								</Text>
+							) : null}
+						</Box>
+						{focusTitle && !showMultiHistory ? (
+							<Box>
+								<Text color={theme.colors.menuSecondary} dimColor>
+									{'    └─ '}
+									{focusTitle}
+								</Text>
+							</Box>
+						) : null}
+						{showMultiHistory && !isTerminal
+							? (slot.historyLines || []).slice(-5).map((line, idx, arr) => (
+									<Box key={slot.agentId + '-h-' + String(idx)}>
+										<Text color={theme.colors.menuSecondary} dimColor>
+											{'    '}
+											{idx === arr.length - 1 ? '└─ ' : '│  '}
+											{stripAnsi(line)}
+										</Text>
+									</Box>
+							  ))
+							: null}
+						{!isTerminal && slot.otherPendingCount > 0 ? (
+							<Box>
+								<Text color={theme.colors.cyan} dimColor>
+									{'    └─ '}
+									{t.chatScreen.pendingToolsMore.replace(
+										'{count}',
+										String(slot.otherPendingCount),
+									)}
+								</Text>
+							</Box>
+						) : null}
+					</Box>
+				);
+			})}
+		</Box>
+	);
+}
+
+const areEqual = (prev: Props, next: Props): boolean =>
+	prev.toolDisplayMode === next.toolDisplayMode &&
+	prev.subAgentDisplayMode === next.subAgentDisplayMode;
+
+const SubAgentLiveSlots = memo(SubAgentLiveSlotsImpl, areEqual);
+SubAgentLiveSlots.displayName = 'SubAgentLiveSlots';
+export default SubAgentLiveSlots;

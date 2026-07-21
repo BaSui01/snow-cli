@@ -840,6 +840,7 @@ type CommandHandlerOptions = {
 	setShowContextPanel: React.Dispatch<React.SetStateAction<boolean>>;
 	setShowModelsPanel: React.Dispatch<React.SetStateAction<boolean>>;
 	setShowSubAgentDepthPanel: React.Dispatch<React.SetStateAction<boolean>>;
+	setShowDisplayPanel: React.Dispatch<React.SetStateAction<boolean>>;
 	setShowCustomCommandConfig: React.Dispatch<React.SetStateAction<boolean>>;
 	setShowSkillsCreation: React.Dispatch<React.SetStateAction<boolean>>;
 	setShowSkillsInstall: React.Dispatch<React.SetStateAction<boolean>>;
@@ -1471,6 +1472,14 @@ export function useCommandHandler(options: CommandHandlerOptions) {
 				options.setShowNewPromptPanel(true);
 			} else if (result.success && result.action === 'showSubAgentDepthPanel') {
 				options.setShowSubAgentDepthPanel(true);
+				const commandMessage: Message = {
+					role: 'command',
+					content: '',
+					commandName: commandName,
+				};
+				options.setMessages(prev => [...prev, commandMessage]);
+			} else if (result.success && result.action === 'showDisplayPanel') {
+				options.setShowDisplayPanel(true);
 				const commandMessage: Message = {
 					role: 'command',
 					content: '',

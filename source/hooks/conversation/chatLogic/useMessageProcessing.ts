@@ -24,6 +24,7 @@ import {
 	shouldNotifyAgentTurnCompletion,
 } from '../../../utils/platform/notification.js';
 import {hasEnabledHookActions} from '../../../utils/config/hooksConfig.js';
+import {clearCompletedSubAgentLiveSlots} from '../core/subAgentLiveStore.js';
 
 interface MessageTarget {
 	instanceId: string;
@@ -536,6 +537,8 @@ export function useMessageProcessing(props: UseChatLogicProps) {
 			streamingState.setIsStreaming(false);
 			streamingState.setAbortController(null);
 			streamingState.setStreamTokenCount(0);
+			// Residual Done cards stay while the main turn streams; clear at turn end.
+			clearCompletedSubAgentLiveSlots();
 
 			// ── /goal Ralph Loop continuation scheduling ──
 			// 用本轮初始快照的 wasUserInterrupted 判定，避免 ref 已被 reset 的陷阱。
@@ -1103,6 +1106,7 @@ export function useMessageProcessing(props: UseChatLogicProps) {
 			streamingState.setIsStreaming(false);
 			streamingState.setAbortController(null);
 			streamingState.setStreamTokenCount(0);
+			clearCompletedSubAgentLiveSlots();
 		}
 	};
 

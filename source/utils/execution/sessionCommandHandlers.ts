@@ -31,8 +31,11 @@ import {
 	setToolDisplayMode,
 	getThinkDisplayMode,
 	setThinkDisplayMode,
+	getSubAgentDisplayMode,
+	setSubAgentDisplayMode,
 	type ToolDisplayMode,
 	type ThinkDisplayMode,
+	type SubAgentDisplayMode,
 } from '../config/themeConfig.js';
 import {configEvents} from '../config/configEvents.js';
 import {
@@ -1195,6 +1198,83 @@ function handleToolDisplay(
 	);
 }
 
+function handleSubAgentDisplay(
+	meta: SessionCommandMeta,
+	args?: string,
+): SessionCommandResult {
+	const token = (args ?? '').trim().toLowerCase();
+	const current = getSubAgentDisplayMode();
+	if (!token || token === 'status') {
+		return okResult(
+			meta.id,
+			{mode: current},
+			'Sub-agent display: ' + current,
+			meta.risk,
+		);
+	}
+	if (
+		token === 'slots' ||
+		token === 'multi' ||
+		token === 'compact' ||
+		token === 'hidden'
+	) {
+		const mode = token as SubAgentDisplayMode;
+		setSubAgentDisplayMode(mode);
+		configEvents.emitConfigChange({type: 'subAgentDisplayMode', value: mode});
+		return okResult(
+			meta.id,
+			{mode, previous: current},
+			'Sub-agent display: ' + mode,
+			meta.risk,
+		);
+	}
+	return failResult(
+		meta.id,
+		'INVALID_ARGS',
+		'Usage: subagent-display [slots|multi|compact|hidden|status]',
+		meta.risk,
+	);
+}
+
+function handleDisplay(
+	meta: SessionCommandMeta,
+	args?: string,
+): SessionCommandResult {
+	const tokens = (args ?? '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+
+	if (tokens.length === 0 || tokens[0] === 'status' || tokens[0] === 'help') {
+		const tool = getToolDisplayMode();
+		const think = getThinkDisplayMode();
+		const subagent = getSubAgentDisplayMode();
+		return okResult(
+			meta.id,
+			{tool, think, subagent},
+			'Display: tool=' + tool + ' · think=' + think + ' · subagent=' + subagent,
+			meta.risk,
+		);
+	}
+
+	const target = tokens[0]!;
+	const modeToken = tokens[1] ?? 'status';
+
+	if (target === 'tool' || target === 'tools') {
+		return handleToolDisplay(meta, modeToken);
+	}
+	if (target === 'think' || target === 'thinking') {
+		return handleThinkDisplay(meta, modeToken);
+	}
+	if (target === 'subagent' || target === 'sub-agent' || target === 'agent') {
+		return handleSubAgentDisplay(meta, modeToken);
+	}
+
+	return failResult(
+		meta.id,
+		'INVALID_ARGS',
+		'Usage: display [status|tool|think|subagent] [mode]',
+		meta.risk,
+	);
+}
+
 function handleThinkDisplay(
 	meta: SessionCommandMeta,
 	args?: string,
@@ -2015,6 +2095,10 @@ export async function executeSessionCommandHandler(
 			return handleToolDisplay(meta, normalizedArgs);
 		case 'think-display':
 			return handleThinkDisplay(meta, normalizedArgs);
+		case 'subagent-display':
+			return handleSubAgentDisplay(meta, normalizedArgs);
+		case 'display':
+			return handleDisplay(meta, normalizedArgs);
 		case 'image-compress':
 			return handleBooleanSetting(
 				meta,

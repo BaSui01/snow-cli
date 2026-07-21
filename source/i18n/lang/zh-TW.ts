@@ -154,6 +154,8 @@ export const zhTW: TranslationKeys = {
 	},
 	menu: {
 		navigate: '使用 ↑↓ 鍵導航,按 Enter 選擇:',
+		moreAbove: '↑ 上方還有 {count} 項',
+		moreBelow: '↓ 下方還有 {count} 項',
 	},
 	proxyConfig: {
 		title: '代理配置',
@@ -583,6 +585,15 @@ export const zhTW: TranslationKeys = {
 		diffOpacity: 'Diff 高亮強度:',
 		diffOpacityInfo:
 			'調整差異高亮顯示強度，預設 100%，最低 30%，按 Enter 以 10% 循環切換',
+		toolDisplay: '工具顯示:',
+		toolDisplayInfo:
+			'工具呼叫密度 full/compact/hidden（Enter 循環；等同 /tool-display）',
+		thinkDisplay: '思考顯示:',
+		thinkDisplayInfo:
+			'思考內容 full/compact（Enter 循環；等同 /think-display）',
+		subAgentDisplay: '子代理顯示:',
+		subAgentDisplayInfo:
+			'子代理即時面板 slots/multi/compact/hidden（Enter 循環；等同 /subagent-display）',
 		enabled: '[✓] 已啟用',
 		disabled: '[ ] 已停用',
 		darkTheme: '深色主題',
@@ -876,6 +887,10 @@ export const zhTW: TranslationKeys = {
 				'自訂工具顯示名（官方路徑，勿整檔改 theme.json）。用法: /tool-names|/tool-name [status|clear|<tool>:<名> …]',
 			thinkDisplay:
 				'控制思考內容顯示模式。用法: /think-display [full|compact|status]',
+			subAgentDisplay:
+				'控制子代理即時顯示。slots=單行焦點(預設) multi=多行 compact=僅標題 hidden=舊卡片 status=查詢。用法: /subagent-display [slots|multi|compact|hidden|status]',
+			display:
+				'開啟顯示設定面板（工具/思考/子代理）。用法: /display | status | tool|think|subagent [mode]',
 			speedometer:
 				'切換即時測速儀，監控 token/s 輸出速率。用法: /speedometer [on|off|status]',
 			cut: '打斷 AI 回覆並立即傳送訊息。用法: /cut <訊息內容>',
@@ -995,6 +1010,32 @@ export const zhTW: TranslationKeys = {
 						: '（縮減思考內容後移入靜態區）'),
 				set: (mode: string) => `思考顯示模式已設定為: ${mode}`,
 				invalid: '無效的模式。用法: /think-display [full|compact|status]',
+			},
+			subAgentDisplay: {
+				status: (mode: string) =>
+					`子代理顯示模式: ${mode}` +
+					(mode === 'slots'
+						? ' (agent 容器 + 單行焦點覆蓋)'
+						: mode === 'multi'
+						? ' (agent 容器 + 多行歷史)'
+						: mode === 'compact'
+						? ' (僅 agent 標題行)'
+						: ' (關閉即時面板，回退舊工具卡片)'),
+				set: (mode: string) => `子代理顯示模式已設為: ${mode}`,
+				invalid:
+					'無效的模式。用法: /subagent-display [slots|multi|compact|hidden|status]',
+			},
+			display: {
+				status: (tool: string, think: string, subagent: string) =>
+					`顯示: tool=${tool} · think=${think} · subagent=${subagent}`,
+				help:
+					'用法: /display [status]\n' +
+					'      /display tool [full|compact|hidden|status]\n' +
+					'      /display think [full|compact|status]\n' +
+					'      /display subagent [slots|multi|compact|hidden|status]\n' +
+					'相容: /tool-display · /think-display · /subagent-display',
+				invalid: '無效參數。用法: /display [status|tool|think|subagent] [mode]',
+				opening: '正在開啟顯示設定面板',
 			},
 			// 測速儀命令訊息
 			speedometer: {
@@ -1270,6 +1311,19 @@ export const zhTW: TranslationKeys = {
 		yes: '是',
 		no: '否',
 	},
+	displayPanel: {
+		title: '顯示設定',
+		tool: '工具顯示:',
+		think: '思考顯示:',
+		subagent: '子代理顯示:',
+		toolInfo: 'Enter 循環 full → compact → hidden（等同 /display tool）',
+		thinkInfo: 'Enter 循環 compact → full（等同 /display think）',
+		subagentInfo:
+			'Enter 循環 slots → multi → compact → hidden（等同 /display subagent）',
+		close: '← 關閉',
+		closeInfo: '返回聊天',
+		hint: '↑↓ 導航 · Enter 切換 · Esc 關閉 · 也可: /display tool|think|subagent',
+	},
 	subAgentDepthPanel: {
 		title: '子代理深度設定',
 		description: '設定子代理繼續建立子代理時允許的最大深度。',
@@ -1543,6 +1597,7 @@ export const zhTW: TranslationKeys = {
 		statusFinishing: '收尾中...',
 		statusStreaming: '串流傳輸中',
 		statusWorking: '工作中',
+		statusWaitingSubAgents: '等待子代理中...',
 		statusIndexing: '索引代碼庫...',
 		statusWatcherActive: '檔案監視器已啟用 - 監控代碼變更',
 		statusWatcherActiveShort: '檔案監視',

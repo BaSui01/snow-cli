@@ -8,6 +8,8 @@ import {
 	MIN_TOOL_DURATION_DISPLAY_MS,
 } from '../../../utils/core/textUtils.js';
 import {useI18n} from '../../../i18n/I18nContext.js';
+import {SUBAGENT_LIVE_SLOTS_ENABLED} from '../../../hooks/conversation/core/subAgentLiveStore.js';
+import {getSubAgentDisplayMode} from '../../../utils/config/themeConfig.js';
 
 interface Props {
 	messages: Message[];
@@ -43,11 +45,23 @@ function PendingToolCallsImpl({messages}: Props) {
 	// are pending.
 	const pendingTools = useMemo(
 		() =>
-			messages.filter(
-				msg =>
-					(msg.role === 'assistant' || msg.role === 'subagent') &&
-					msg.toolPending === true,
-			),
+			messages.filter(msg => {
+				// Only main-agent pending rows belong here.
+				if (msg.role !== 'assistant' || msg.toolPending !== true) {
+					return false;
+				}
+				// When live slots own sub-agent UI, hide the outer subagent-* tool
+				// pending row (avoids: agent container + "subagent-agent_general (21s)").
+				if (
+					SUBAGENT_LIVE_SLOTS_ENABLED &&
+					getSubAgentDisplayMode() !== 'hidden' &&
+					typeof msg.toolCall?.name === 'string' &&
+					msg.toolCall.name.startsWith('subagent-')
+				) {
+					return false;
+				}
+				return true;
+			}),
 		[messages],
 	);
 
@@ -77,9 +91,7 @@ function PendingToolCallsImpl({messages}: Props) {
 	const oldestStartedAt = pendingTools.reduce<number | undefined>(
 		(oldest, tool) => {
 			const startedAt =
-				typeof tool.toolStartedAt === 'number'
-					? tool.toolStartedAt
-					: undefined;
+				typeof tool.toolStartedAt === 'number' ? tool.toolStartedAt : undefined;
 			if (startedAt === undefined) return oldest;
 			return oldest === undefined ? startedAt : Math.min(oldest, startedAt);
 		},
@@ -98,9 +110,7 @@ function PendingToolCallsImpl({messages}: Props) {
 
 	const renderToolRow = (tool: Message, index: number) => {
 		const startedAt =
-			typeof tool.toolStartedAt === 'number'
-				? tool.toolStartedAt
-				: undefined;
+			typeof tool.toolStartedAt === 'number' ? tool.toolStartedAt : undefined;
 		const elapsedMs =
 			startedAt !== undefined ? Math.max(0, now - startedAt) : 0;
 		const elapsedSeconds = Math.floor(elapsedMs / 1000);
@@ -111,8 +121,7 @@ function PendingToolCallsImpl({messages}: Props) {
 			  formatDurationMs(elapsedMs)
 			: '';
 		const tokens =
-			typeof tool.toolProgressTokens === 'number' &&
-			tool.toolProgressTokens > 0
+			typeof tool.toolProgressTokens === 'number' && tool.toolProgressTokens > 0
 				? tool.toolProgressTokens
 				: undefined;
 		const progressParts = [
@@ -151,33 +160,33 @@ function PendingToolCallsImpl({messages}: Props) {
 						: visibleTools[0]?.content || 'Running tool'}
 				</Text>
 				{pendingTools.length === 1 &&
-				visibleTools[0] &&
-				(() => {
-					const tool = visibleTools[0]!;
-					const startedAt =
-						typeof tool.toolStartedAt === 'number'
-							? tool.toolStartedAt
-							: undefined;
-					if (startedAt === undefined) return null;
-					const elapsedMs = Math.max(0, now - startedAt);
-					if (elapsedMs < MIN_TOOL_DURATION_DISPLAY_MS) return null;
-					const elapsedSeconds = Math.floor(elapsedMs / 1000);
-					const label =
-						formatElapsedTime(Math.max(elapsedSeconds, 1)) ||
-						formatDurationMs(elapsedMs);
-					const tokens =
-						typeof tool.toolProgressTokens === 'number' &&
-						tool.toolProgressTokens > 0
-							? `${tool.toolProgressTokens} tokens`
-							: undefined;
-					const parts = [label, tokens].filter(Boolean).join(' · ');
-					return parts ? (
-						<Text color="cyan" dimColor>
-							{' '}
-							({parts})
-						</Text>
-					) : null;
-				})()}
+					visibleTools[0] &&
+					(() => {
+						const tool = visibleTools[0]!;
+						const startedAt =
+							typeof tool.toolStartedAt === 'number'
+								? tool.toolStartedAt
+								: undefined;
+						if (startedAt === undefined) return null;
+						const elapsedMs = Math.max(0, now - startedAt);
+						if (elapsedMs < MIN_TOOL_DURATION_DISPLAY_MS) return null;
+						const elapsedSeconds = Math.floor(elapsedMs / 1000);
+						const label =
+							formatElapsedTime(Math.max(elapsedSeconds, 1)) ||
+							formatDurationMs(elapsedMs);
+						const tokens =
+							typeof tool.toolProgressTokens === 'number' &&
+							tool.toolProgressTokens > 0
+								? `${tool.toolProgressTokens} tokens`
+								: undefined;
+						const parts = [label, tokens].filter(Boolean).join(' · ');
+						return parts ? (
+							<Text color="cyan" dimColor>
+								{' '}
+								({parts})
+							</Text>
+						) : null;
+					})()}
 			</Box>
 			{/* When multiple tools run in parallel, list each (capped) without a
 			    per-row Spinner to avoid N independent timers choking the TUI. */}

@@ -12,6 +12,7 @@ import {commandUsageManager} from '../../utils/session/commandUsageManager.js';
 import {runningSubAgentTracker} from '../../utils/execution/runningSubAgentTracker.js';
 import {teamTracker} from '../../utils/execution/teamTracker.js';
 import {getAllProfiles} from '../../utils/config/configManager.js';
+import {getCurrentLanguage} from '../../utils/config/languageConfig.js';
 import {
 	findInlineCommandTrigger,
 	isInlineCommand,
@@ -87,6 +88,9 @@ export const COMMAND_ARGS_HINTS: Record<string, string> = {
 	'tool-names': '[status|clear|<tool>:<name> …]',
 	'tool-name': '[status|clear|<tool>:<name> …]',
 	'think-display': '[full|compact|status]',
+	// 参数提示：默认 slots；status 只查询，不切换
+	'subagent-display': '[slots默认|multi多行|compact精简|hidden关闭|status查询]',
+	display: '[status|tool|think|subagent] [mode]',
 	speedometer: '[on|off|status]',
 };
 
@@ -123,6 +127,8 @@ export const COMMAND_ARGS_OPTIONS: Record<string, CommandArgOption[]> = {
 	'tool-names': ['status', 'clear'],
 	'tool-name': ['status', 'clear'],
 	'think-display': ['full', 'compact', 'status'],
+	'subagent-display': ['slots', 'multi', 'compact', 'hidden', 'status'],
+	display: ['status', 'tool', 'think', 'subagent', 'help'],
 	speedometer: ['on', 'off', 'status'],
 };
 
@@ -139,6 +145,58 @@ function getBuddyProfileArgOptions(): CommandArgOption[] {
 	];
 }
 
+/** Labeled choices so the args picker explains each mode (not bare tokens). */
+function getSubAgentDisplayArgOptions(): CommandArgOption[] {
+	const lang = getCurrentLanguage();
+	const isZh = lang === 'zh' || lang === 'zh-TW';
+	if (isZh) {
+		return [
+			{
+				value: 'slots',
+				label: 'slots   · 默认：agent 容器 + 当前焦点覆盖',
+			},
+			{
+				value: 'multi',
+				label: 'multi   · agent 容器 + 最近多行历史',
+			},
+			{
+				value: 'compact',
+				label: 'compact · 仅 agent 标题/耗时',
+			},
+			{
+				value: 'hidden',
+				label: 'hidden  · 关闭实时面板（旧工具卡片）',
+			},
+			{
+				value: 'status',
+				label: 'status  · 查看当前模式（不切换）',
+			},
+		];
+	}
+	return [
+		{
+			value: 'slots',
+			label: 'slots   · default: agent container + focus overwrite',
+		},
+		{
+			value: 'multi',
+			label: 'multi   · agent container + recent multi-line history',
+		},
+		{
+			value: 'compact',
+			label: 'compact · agent header / elapsed only',
+		},
+		{
+			value: 'hidden',
+			label: 'hidden  · disable live panel (legacy tool cards)',
+		},
+		{
+			value: 'status',
+			label: 'status  · show current mode (no change)',
+		},
+	];
+}
+
 export function getCommandArgsOptions(
 	commandName: string,
 	inputText?: string,
@@ -148,6 +206,10 @@ export function getCommandArgsOptions(
 		/^\/buddy\s+profile\s*$/.test(inputText ?? '')
 	) {
 		return getBuddyProfileArgOptions();
+	}
+
+	if (commandName === 'subagent-display') {
+		return getSubAgentDisplayArgOptions();
 	}
 
 	// Check static dictionary first
@@ -501,6 +563,18 @@ export function useCommandPanel(buffer: TextBuffer, isProcessing = false) {
 				description:
 					t.commandPanel.commands.thinkDisplay ||
 					'Control thinking content display mode. Usage: /think-display [full|compact|status]',
+			},
+			{
+				name: 'subagent-display',
+				description:
+					t.commandPanel.commands.subAgentDisplay ||
+					'Control sub-agent live panel. Usage: /subagent-display [slots|multi|compact|hidden|status]',
+			},
+			{
+				name: 'display',
+				description:
+					t.commandPanel.commands.display ||
+					'Display settings panel. Usage: /display | /display status | /display tool|think|subagent [mode]',
 			},
 			{
 				name: 'speedometer',

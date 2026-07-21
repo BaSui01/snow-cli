@@ -162,6 +162,8 @@ export const en: TranslationKeys = {
 	},
 	menu: {
 		navigate: 'Use ↑↓ keys to navigate, press Enter to select:',
+		moreAbove: '↑ +{count} more above',
+		moreBelow: '↓ +{count} more below',
 	},
 	proxyConfig: {
 		title: 'Proxy Configuration',
@@ -619,6 +621,15 @@ export const en: TranslationKeys = {
 		diffOpacity: 'Diff Highlight Strength:',
 		diffOpacityInfo:
 			'Adjust diff highlight strength, default 100%, minimum 30%, press Enter to cycle by 10%',
+		toolDisplay: 'Tool display:',
+		toolDisplayInfo:
+			'Tool call density full/compact/hidden (Enter to cycle; same as /tool-display)',
+		thinkDisplay: 'Think display:',
+		thinkDisplayInfo:
+			'Thinking content full/compact (Enter to cycle; same as /think-display)',
+		subAgentDisplay: 'Sub-agent display:',
+		subAgentDisplayInfo:
+			'Sub-agent live panel slots/multi/compact/hidden (Enter to cycle; same as /subagent-display)',
 		enabled: '[✓] Enabled',
 		disabled: '[ ] Disabled',
 		darkTheme: 'Dark Theme',
@@ -930,6 +941,10 @@ export const en: TranslationKeys = {
 				'Override tool display names (prefer this over editing theme.json). Usage: /tool-names|/tool-name [status|clear|<tool>:<name> …]',
 			thinkDisplay:
 				'Control thinking content display mode. Usage: /think-display [full|compact|status]',
+			subAgentDisplay:
+				'Control sub-agent live display. slots=focus overwrite (default) multi=multi-line compact=header-only hidden=legacy cards status=query. Usage: /subagent-display [slots|multi|compact|hidden|status]',
+			display:
+				'Open display settings panel (tool/think/subagent). Usage: /display | status | tool|think|subagent [mode]',
 			speedometer:
 				'Toggle real-time speedometer to monitor token/s output rate. Usage: /speedometer [on|off|status]',
 			cut: 'Interrupt AI response and immediately send a message. Usage: /cut <message>',
@@ -1054,6 +1069,33 @@ export const en: TranslationKeys = {
 						: ' (compact thinking content then move to static area)'),
 				set: (mode: string) => `Think display mode set to: ${mode}`,
 				invalid: 'Invalid mode. Usage: /think-display [full|compact|status]',
+			},
+			subAgentDisplay: {
+				status: (mode: string) =>
+					`Sub-agent display mode: ${mode}` +
+					(mode === 'slots'
+						? ' (agent container + single focus overwrite)'
+						: mode === 'multi'
+						? ' (agent container + recent multi-line history)'
+						: mode === 'compact'
+						? ' (agent header only)'
+						: ' (live panel off; legacy tool cards)'),
+				set: (mode: string) => `Sub-agent display mode set to: ${mode}`,
+				invalid:
+					'Invalid mode. Usage: /subagent-display [slots|multi|compact|hidden|status]',
+			},
+			display: {
+				status: (tool: string, think: string, subagent: string) =>
+					`Display: tool=${tool} · think=${think} · subagent=${subagent}`,
+				help:
+					'Usage: /display [status]\n' +
+					'       /display tool [full|compact|hidden|status]\n' +
+					'       /display think [full|compact|status]\n' +
+					'       /display subagent [slots|multi|compact|hidden|status]\n' +
+					'Compat: /tool-display · /think-display · /subagent-display',
+				invalid:
+					'Invalid args. Usage: /display [status|tool|think|subagent] [mode]',
+				opening: 'Opening display settings panel',
 			},
 			// Speedometer command messages
 			speedometer: {
@@ -1349,6 +1391,21 @@ export const en: TranslationKeys = {
 		yes: 'Yes',
 		no: 'No',
 	},
+	displayPanel: {
+		title: 'Display settings',
+		tool: 'Tool display:',
+		think: 'Think display:',
+		subagent: 'Sub-agent display:',
+		toolInfo:
+			'Enter to cycle full → compact → hidden (same as /display tool)',
+		thinkInfo:
+			'Enter to cycle compact → full (same as /display think)',
+		subagentInfo:
+			'Enter to cycle slots → multi → compact → hidden (same as /display subagent)',
+		close: '← Close',
+		closeInfo: 'Return to chat',
+		hint: '↑↓ navigate · Enter cycle · Esc close · also: /display tool|think|subagent',
+	},
 	subAgentDepthPanel: {
 		title: 'Sub-Agent Depth',
 		description:
@@ -1632,6 +1689,7 @@ export const en: TranslationKeys = {
 		statusFinishing: 'Finishing...',
 		statusStreaming: 'Streaming',
 		statusWorking: 'Working',
+		statusWaitingSubAgents: 'Waiting for sub-agents...',
 		statusIndexing: 'Indexing codebase...',
 		statusWatcherActive: 'File watcher active - monitoring code changes',
 		statusWatcherActiveShort: 'Watcher',
