@@ -415,6 +415,7 @@ export function useMessageProcessing(props: UseChatLogicProps) {
 					onCompressionStatus: props.onCompressionStatus,
 					onThinkingStatus: props.onThinkingStatus,
 					setIsAutoCompressing: streamingState.setIsAutoCompressing,
+					pauseGate: streamingState.pauseGate,
 				});
 			} finally {
 				// On-demand backup system - snapshot management is automatic
@@ -539,8 +540,10 @@ export function useMessageProcessing(props: UseChatLogicProps) {
 			streamingState.setStreamTokenCount(0);
 			// Residual Done cards stay while the main turn streams; clear at turn end.
 			clearCompletedSubAgentLiveSlots();
+			// Reset pauseGate in case the loop was paused when it ended
+			streamingState.pauseGate?.reset();
 
-			// ── /goal Ralph Loop continuation scheduling ──
+			// -- /goal Ralph Loop continuation scheduling --
 			// 用本轮初始快照的 wasUserInterrupted 判定，避免 ref 已被 reset 的陷阱。
 			// 同时再次校验 goal 当前状态：用户 ESC 时 handleInterrupt 会把 goal 置为
 			// paused，所以即使 wasUserInterrupted 漏判，status !== 'pursuing' 也能兜底。
@@ -1014,6 +1017,7 @@ export function useMessageProcessing(props: UseChatLogicProps) {
 					onCompressionStatus: props.onCompressionStatus,
 					onThinkingStatus: props.onThinkingStatus,
 					setIsAutoCompressing: streamingState.setIsAutoCompressing,
+					pauseGate: streamingState.pauseGate,
 				});
 			} finally {
 				// Snapshots are now created on-demand during file operations
@@ -1107,6 +1111,8 @@ export function useMessageProcessing(props: UseChatLogicProps) {
 			streamingState.setAbortController(null);
 			streamingState.setStreamTokenCount(0);
 			clearCompletedSubAgentLiveSlots();
+			// Reset pauseGate in case the loop was paused when it ended
+			streamingState.pauseGate?.reset();
 		}
 	};
 

@@ -855,6 +855,8 @@ export type TranslationKeys = {
 			display: string;
 			speedometer: string;
 			cut: string;
+			pause: string;
+			continue: string;
 			quit: string;
 		};
 		copyLastFeedback: {
@@ -1062,6 +1064,11 @@ export type TranslationKeys = {
 			// Cut (interrupt) command messages
 			cut: {
 				usage: string;
+			};
+			// Pause/Continue command messages
+			pause: {
+				paused: string;
+				resumed: string;
 			};
 			// BTW command messages
 			btw: {
@@ -1497,6 +1504,7 @@ export type TranslationKeys = {
 		statusConnected: string;
 		statusConnectionFailed: string;
 		statusStopping: string;
+		statusPaused: string;
 		inputCopySuccess: string;
 		inputCopyFailedPrefix: string;
 		// Profile switch
